@@ -1,0 +1,27 @@
+services:
+  bot:
+    build: ./bot
+    container_name: habbiton_bot
+    env_file: ./.env
+    volumes:
+      - ./bot:/usr/src/app
+    command: poetry run bot
+    tty: true
+    networks:
+      - habbiton-network
+        
+  db:
+    image: postgres:latest
+    container_name: habbiton_db
+    env_file: ./.env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - habbiton-network
+    ports:
+      - "5432:5432"
+volumes:
+  postgres-data:
+
+networks:
+  habbiton-network:

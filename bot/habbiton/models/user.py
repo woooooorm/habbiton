@@ -18,12 +18,14 @@ class User(Base):
 
     @classmethod
     async def from_id(cls, id: int) -> 'User':
+        "Pulls user ins with particular telegram id"
         async with cls.session() as ses:
             stmt = select(cls).where(cls.id == id)
             return (await ses.execute(stmt)).scalar()
         
     @classmethod
     async def new(cls, id: int, name: str) -> 'User':
+        "Creates new user entity with particular telegram id and name"
         try:
             async with cls.session() as ses:
                 ses.add(cls(id = id, username = name))

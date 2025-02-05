@@ -11,6 +11,9 @@ from habbiton import utils
 dp = Dispatcher()
 @dp.message(CommandStart())
 async def respond_start(message) -> None:
+    """
+    Router for handling of /start command
+    """
     user = await User.new(
         message.from_user.id,
         message.from_user.username
@@ -19,6 +22,9 @@ async def respond_start(message) -> None:
 
 @dp.message()
 async def respond(message) -> None:
+    """
+    General router for all message types
+    """
     user = await User.from_id(message.from_user.id)
     if not user:
         await respond_start(message)
@@ -26,6 +32,9 @@ async def respond(message) -> None:
 
 @dp.callback_query()
 async def respond_inline(message) -> None:
+    """
+    Router for callbacks from inline buttons
+    """
     user = await User.from_id(message.from_user.id)
     callback_data = message.data.split("|")
     params = callback_data[1:]

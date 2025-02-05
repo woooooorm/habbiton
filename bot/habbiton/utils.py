@@ -5,6 +5,9 @@ from habbiton import Base, engine, session
 from datetime import date, timedelta
 from sqlalchemy import select
 async def fill_new_db():
+    """
+    Checks tables, creates if those are absent, also fills them with bot's levels structure
+    """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -16,6 +19,9 @@ async def fill_new_db():
     
 
 async def create_test_fixture(user_id):
+    """
+    Generates 5 predefined habits for user testing in-app, also generates track record for 4+ weeks
+    """
     today = date.today()
     async with session() as ses:
         h1 = Habit(name="Drink enough water", user_id=user_id, period = "Daily", created_date = date.today().replace(year=today.year - 1))

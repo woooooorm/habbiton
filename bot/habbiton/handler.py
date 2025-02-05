@@ -4,11 +4,17 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from habbiton import utils
 
 class Handler:
+    "Main handler class, for bot event processing"
     def __init__(self, user, message):
         self.user = user
         self.message = message
     
     async def handle(self) -> None:
+        """
+        Handle incoming messages and process them according to the user's current level.
+        This method processes all messages except the /start command. It checks if the message
+        matches any buttons in the current level and handles callbacks appropriately.
+        """
         self.level = await Level.from_name(self.user.current_level)
         
         button = await self.level.check_button(self.message.text)
@@ -33,6 +39,7 @@ class Handler:
             await self.message.answer(message.text, reply_markup=buttons)
 
     async def show_habits(self, update = 'n', filter = None) -> None:
+        "Callback to form a list of all habits, supports filtering, shows which habits are checked"
         if filter:
             habits = await Habit.get_user_habits(self.user.id, filter)
         else:
@@ -76,6 +83,7 @@ class Handler:
             await self.user.update(latest_msg_id=msg.message_id)
 
     async def purge_msg(self) -> None:
+        "Deletes message with inline buttons"
         if self.user.latest_msg_id:
             await self.message.bot.delete_message(self.user.id, self.user.latest_msg_id)
             await self.user.update(latest_msg_id=None)
@@ -92,6 +100,7 @@ class Handler:
         await self.move_user('main')
     
     async def info(self, id: str) -> None:
+        "Callback for getting info about particular habit, triggered from inline buttons"
         habit = await Habit.get_user_habit(self.user.id, id)
         info_msg = f"Name: {habit.name}\n\n"
         info_msg += f"Start date: {habit.created_date}\n"
@@ -135,6 +144,7 @@ class Handler:
         await self.show_habits('y')
     
     async def show_stats(self) -> None:
+        "Callback for stats menu, sends global info about user's habits"
         habits = await Habit.get_user_habits(self.user.id)
         if len(habits) == 0:
             await self.message.answer("You don't have any habits yet")
@@ -164,6 +174,7 @@ class Handler:
 
     @staticmethod
     async def calculate_longest_streak(habits: list[Habit]) -> None:
+        "Helper method to find a habit with the longest streak in a list"
         max = 0
         max_habit = None
         for habit in habits:

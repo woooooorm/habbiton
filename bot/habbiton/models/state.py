@@ -16,16 +16,19 @@ class Level(Base):
 
     @classmethod
     async def from_name(cls, name: str) -> 'Level':
+        "Pulls info about level by name"
         async with cls.session() as ses:
             stmt = select(cls).where(cls.name == name)
             return (await ses.execute(stmt)).scalar_one()
         
     async def get_messages(self):
+        "Return messages list for a particular level"
         async with self.session() as ses:
             stmt = select(Message).where(Message.level_name == self.name).order_by(Message.order)
             return (await ses.execute(stmt)).scalars().all()
         
     async def get_buttons(self):
+        "Return buttons list for a particular level, already formatted for sending"
         async with self.session() as ses:
             stmt = select(Button).where(Button.current_level_name == self.name).order_by(Button.order)
             buttons = (await ses.execute(stmt)).scalars().all()
@@ -40,6 +43,7 @@ class Level(Base):
                 ]
             )
     async def check_button(self, text: str):
+        "Tries to find button with matchinng name on the current level"
         async with self.session() as ses:
             stmt = select(Button).where(Button.current_level_name == self.name, Button.text == text)
             return (await ses.execute(stmt)).scalar()

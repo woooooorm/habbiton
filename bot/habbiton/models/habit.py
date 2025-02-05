@@ -19,12 +19,14 @@ class Habit(Base):
 
     @classmethod
     async def new(cls, name: str, user_id: int) -> None:
+        "Creates a temporary habit"
         async with cls.session() as ses:
             ses.add(cls(name = name, user_id = user_id))
             await ses.commit()
     
     @classmethod
     async def delete_unfinished(cls, id) -> None:
+        "Deletes a temporary habit, if user decided to cancel habit creation"
         async with cls.session() as ses:
             stmt = delete(cls).where(cls.period == None, cls.user_id == id)
             await ses.execute(stmt)
@@ -32,6 +34,7 @@ class Habit(Base):
     
     @classmethod
     async def set_period(cls, value, id) -> None:
+        "Finishes a temporary habit, making it a normal one"
         async with cls.session() as ses:
             stmt = update(cls).where(cls.period == None, cls.user_id == id).values(period = value)
             await ses.execute(stmt)
@@ -65,6 +68,7 @@ class Habit(Base):
             await ses.commit()
 
     async def check_completion(self, today = datetime.now().date()) -> bool:
+        "Checks habit completion in the current period"
         if self.period == 'Daily':
             stmt = select(HabitCompletion).where(HabitCompletion.habit_id == self.id, HabitCompletion.created_date == today)
         elif self.period == 'Weekly':
@@ -89,6 +93,7 @@ class Habit(Base):
             return True if (await ses.execute(stmt)).scalar() else False
     
     async def delete(self) -> None:
+        "Deletes habit and all completions of it"
         async with self.session() as ses:
             stmt = delete(HabitCompletion).where(HabitCompletion.habit_id == self.id)
             await ses.execute(stmt)
@@ -99,6 +104,7 @@ class Habit(Base):
             await ses.commit()
     
     async def calculate_streak(self) -> int:
+        "Checks completion in the current period, and periods before it, unless a missing completion is found or habit creating date is passes"
         streak = 0
         today = datetime.now().date()
         while today >= self.created_date:
@@ -119,6 +125,7 @@ class Habit(Base):
         return streak
     
     async def calculate_longest_streak(self) -> int:
+        "Checks completion in the current period, and periods before it, habit creating date is passes, tracks maximum streak seen"
         streak = 0
         max = 0
         today = datetime.now().date()

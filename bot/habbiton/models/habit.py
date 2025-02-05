@@ -11,46 +11,54 @@ class Habit(Base):
     created_date = mapped_column(Date, nullable=True, default = datetime.now().date)
     period = mapped_column(String, nullable=True)
     starred = mapped_column(Boolean, nullable=True, default = False)
+    session = session
     
     @classmethod
+    def set_session(cls, session) -> None:
+        cls.session = session
+
+    @classmethod
     async def new(cls, name: str, user_id: int) -> None:
-        async with session() as ses:
+        async with cls.session() as ses:
             ses.add(cls(name = name, user_id = user_id))
             await ses.commit()
     
     @classmethod
     async def delete_unfinished(cls, id) -> None:
-        async with session() as ses:
+        async with cls.session() as ses:
             stmt = delete(cls).where(cls.period == None, cls.user_id == id)
             await ses.execute(stmt)
             await ses.commit()
     
     @classmethod
     async def set_period(cls, value, id) -> None:
-        async with session() as ses:
+        async with cls.session() as ses:
             stmt = update(cls).where(cls.period == None, cls.user_id == id).values(period = value)
             await ses.execute(stmt)
             await ses.commit()
     
     @classmethod
-    async def get_user_habits(cls, user_id) -> list['Habit']:
-        async with session() as ses:
-            stmt = select(cls).where(cls.user_id == user_id).order_by(cls.starred.desc())
+    async def get_user_habits(cls, user_id, type = None) -> list['Habit']:
+        async with cls.session() as ses:
+            if type:
+                stmt = select(cls).where(cls.user_id == user_id, cls.period == type).order_by(cls.starred.desc())
+            else:
+                stmt = select(cls).where(cls.user_id == user_id).order_by(cls.starred.desc())
             return (await ses.execute(stmt)).scalars().all()
     
     @classmethod
     async def get_user_habit(cls, user_id, id) -> 'Habit':
-        async with session() as ses:
+        async with cls.session() as ses:
             stmt = select(cls).where(cls.user_id == user_id, cls.id == int(id))
             return (await ses.execute(stmt)).scalar()
         
     async def complete(self) -> None:
-        async with session() as ses:
+        async with self.session() as ses:
             ses.add(HabitCompletion(habit_id = self.id))
             await ses.commit()
     
     async def star(self) -> None:
-        async with session() as ses:
+        async with self.session() as ses:
             self.starred = not self.starred
             stmt = update(Habit).where(Habit.id == self.id).values(starred = self.starred)
             await ses.execute(stmt)
@@ -77,11 +85,11 @@ class Habit(Base):
                 HabitCompletion.created_date < upper_buffer
             )
                 
-        async with session() as ses:
+        async with self.session() as ses:
             return True if (await ses.execute(stmt)).scalar() else False
     
     async def delete(self) -> None:
-        async with session() as ses:
+        async with self.session() as ses:
             stmt = delete(HabitCompletion).where(HabitCompletion.habit_id == self.id)
             await ses.execute(stmt)
             await ses.commit()

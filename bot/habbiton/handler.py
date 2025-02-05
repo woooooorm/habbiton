@@ -32,22 +32,42 @@ class Handler:
         for message in await Level(name = level_name).get_messages():
             await self.message.answer(message.text, reply_markup=buttons)
 
-    async def show_habits(self, update = 'n') -> None:
-        habits = await Habit.get_user_habits(self.user.id)
+    async def show_habits(self, update = 'n', filter = None) -> None:
+        if filter:
+            habits = await Habit.get_user_habits(self.user.id, filter)
+        else:
+            habits = await Habit.get_user_habits(self.user.id)
         if len(habits) == 0:    
             text = "Seems that you don't have any habits yet"
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard = [[InlineKeyboardButton(text = "Create text fixture", callback_data = "fixture")]])
         else:
-            text = f"Total: {len(habits)}"
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard = [
-                    [InlineKeyboardButton(
+            buttons = [
+                [
+                    InlineKeyboardButton(
                         text = ("⭐ " if habit.starred else "") +  habit.name + (" ✔️" if await habit.check_completion() else " ❌"), callback_data = f"info|{habit.id}"
                         )
-                    ]
-                    for habit in habits
-                ]
+                ] for habit in habits ]
+            
+            filter_menu = [   
+                InlineKeyboardButton(
+                    text = "All", callback_data = f"show_habits|y"
+                    ),
+                InlineKeyboardButton(
+                    text = "Daily", callback_data = f"show_habits|y|Daily"
+                    ),
+                InlineKeyboardButton(
+                    text = "Weekly", callback_data = f"show_habits|y|Weekly"
+                    ),
+                InlineKeyboardButton(
+                    text = "Monthly", callback_data = f"show_habits|y|Monthly"
+                    )
+            ]
+
+            buttons.insert(0, filter_menu)
+            text = f"Total: {len(habits)}"
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard = buttons
             )
         if update == 'y':
             await self.message.message.edit_text(text, reply_markup = reply_markup)
@@ -124,17 +144,17 @@ class Handler:
         d_habits = [habit for habit in habits if habit.period == 'Daily']
         max, habit = await self.calculate_longest_streak(d_habits)
         if habit:
-            text += f"Longest streak for daily: {habit.name}, {max}\n d"
+            text += f"Longest streak for daily: {habit.name}, {max} d\n"
 
         w_habits = [habit for habit in habits if habit.period == 'Weekly']
         max, habit = await self.calculate_longest_streak(w_habits)
         if habit:
-            text += f"Longest streak for weekly: {habit.name}, {max}\n w"
+            text += f"Longest streak for weekly: {habit.name}, {max} w\n"
 
         m_habits = [habit for habit in habits if habit.period == 'Monthly']
         max, habit = await self.calculate_longest_streak(m_habits)
         if habit:
-            text += f"Longest streak for monthly: {habit.name}, {max}\n m"
+            text += f"Longest streak for monthly: {habit.name}, {max} m\n"
         
         await self.message.answer(text)
 

@@ -17,7 +17,6 @@ async def respond_start(message) -> None:
     )
     await Handler(user, message).handle_start()
 
-
 @dp.message()
 async def respond(message) -> None:
     user = await User.from_id(message.from_user.id)

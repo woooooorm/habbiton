@@ -8,20 +8,25 @@ class Level(Base):
     __tablename__ = 'levels'
     name = mapped_column(String, primary_key=True)
     callback = mapped_column(String, nullable=True)
+    session = session
+
+    @classmethod
+    def set_session(cls, session) -> None:
+        cls.session = session
 
     @classmethod
     async def from_name(cls, name: str) -> 'Level':
-        async with session() as ses:
+        async with cls.session() as ses:
             stmt = select(cls).where(cls.name == name)
             return (await ses.execute(stmt)).scalar_one()
         
     async def get_messages(self):
-        async with session() as ses:
+        async with self.session() as ses:
             stmt = select(Message).where(Message.level_name == self.name).order_by(Message.order)
             return (await ses.execute(stmt)).scalars().all()
         
     async def get_buttons(self):
-        async with session() as ses:
+        async with self.session() as ses:
             stmt = select(Button).where(Button.current_level_name == self.name).order_by(Button.order)
             buttons = (await ses.execute(stmt)).scalars().all()
             if len(buttons) == 0:
@@ -35,7 +40,7 @@ class Level(Base):
                 ]
             )
     async def check_button(self, text: str):
-        async with session() as ses:
+        async with self.session() as ses:
             stmt = select(Button).where(Button.current_level_name == self.name, Button.text == text)
             return (await ses.execute(stmt)).scalar()
 
